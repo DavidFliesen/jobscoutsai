@@ -4,7 +4,8 @@
 
 ![Job Scouts AI Logo](logo.png)
 
-**Live Demo:** *(add your GitHub Pages URL here)*
+**Live Demo:** [https://davidfliesen.github.io/jobscoutsai/](https://davidfliesen.github.io/jobscoutsai/)
+**Repository:** [https://github.com/DavidFliesen/jobscoutsai](https://github.com/DavidFliesen/jobscoutsai)
 
 ---
 
@@ -19,12 +20,12 @@ No servers. No subscriptions. No data collection. Everything runs in your browse
 ## Features
 
 - **Resume Upload & AI Parsing** — Upload PDF, TXT, DOC, or paste text. Gemini extracts your skills, experience, and preferences automatically.
-- **Numeric Scoring (0–100)** — When a profile is loaded, each lead gets a detailed numeric match score with breakdown text. Without a profile, qualitative HOT / WARM / COLD scoring is used.
-- **Configurable Targets** — Set target companies, skill keywords, preferred locations, job sources, and search preferences — all in the browser.
-- **Optional Live Web Search** — Toggle Google Search Grounding to pull real-time job listings (uses free-tier quota — see note below).
-- **Export** — Download results as TXT, HTML report, or print to PDF.
+- **Numeric Scoring (0–100)** — When a profile is loaded, each lead gets a numeric match score with a visual bar and breakdown text. Without a profile, qualitative HOT / WARM / COLD scoring is used.
+- **Configurable Targets** — Set target companies, skill keywords, preferred locations, job sources, and search preferences — all within the browser, no file editing required.
+- **Optional Live Web Search** — Toggle Google Search Grounding to pull real-time job listings (uses free-tier quota — see note below). Off by default.
+- **Export** — Download results as TXT, HTML report, or print to PDF via your browser.
 - **Import / Export Config** — Sync your full configuration across devices via clipboard JSON.
-- **Privacy First** — Your API key and resume never leave your device. The only external call is directly from your browser to Google's API using your own key.
+- **Privacy First** — Your API key and resume never leave your device. The only external call is directly from your browser to Google's Gemini API using your own key.
 
 ---
 
@@ -37,7 +38,6 @@ No servers. No subscriptions. No data collection. Everything runs in your browse
 | Hosting | GitHub Pages (static) |
 | AI Model | Google Gemini 2.5 Flash (via Gemini API) |
 | PDF Parsing | Gemini native PDF support (inline base64) |
-| Word Export | docx.js 8.5.0 (CDN) |
 | Storage | Browser localStorage only |
 
 No backend. No Node.js. No build step. Just open `index.html`.
@@ -66,31 +66,32 @@ Job Scouts AI requires a free Google AI Studio API key. No credit card is requir
    Open Job Scouts AI, go to the **API Configuration** panel, paste your key, and click **Save Config**.
 
 6. **Test the Connection**
-   Click **Test Connection** to verify the key works.
+   Click **Test Connection** to verify the key works before running a scout.
 
-### Free Tier Limits (as of 2026)
+### Free Tier Limits (as of May 2026)
 
 | Resource | Free Tier |
 |---|---|
 | Requests per day | 1,500 RPD (Gemini 2.5 Flash) |
 | Requests per minute | 10–15 RPM |
-| Google Search Grounding | ~500 searches/day free |
+| Google Search Grounding | ~500 grounding queries/day |
 | Cost | $0 — no credit card required |
 
-> **Note on Live Web Search:** The optional "Enable Live Web Search" toggle uses Google's Search Grounding feature. On the free tier, this is limited to approximately 500 grounding queries per day. A single scout run may trigger multiple search queries. If you hit quota errors (`429 Resource Exhausted`), disable live search — the AI will still generate high-quality job leads from its training knowledge.
+> **Note on Live Web Search:** The optional "Enable Live Web Search" toggle uses Google's Search Grounding feature. On the free tier this is limited to approximately 500 grounding queries per day, and a single scout run may consume several. If you hit quota errors (`429 Resource Exhausted`), disable live search — the AI will still generate high-quality leads from its training knowledge of companies and the job market.
 
 ---
 
 ## Deploying to GitHub Pages
 
-### Option A: Upload via GitHub Web
+### Option A: Upload via GitHub Web (no command line needed)
 
-1. Create a new public repository (e.g. `job-scouts-ai`)
-2. Click **Add file → Upload files**
-3. Upload `index.html` and `logo.png`
-4. Go to **Settings → Pages**
-5. Under **Source**, select `main` branch and `/ (root)` folder
-6. Click **Save** — your site will be live at `https://yourusername.github.io/job-scouts-ai/`
+1. Create a new public repository (e.g. `jobscoutsai`)
+2. On the empty repo page, click **"uploading an existing file"**
+3. Drag and drop `index.html`, `logo.png`, and `README.md` onto the upload area
+4. Click **Commit changes**
+5. Go to **Settings → Pages**
+6. Under **Source**, select **Deploy from a branch**, set branch to `main` and folder to `/ (root)`
+7. Click **Save** — your site will be live at `https://yourusername.github.io/jobscoutsai/` within 1–2 minutes
 
 ### Option B: Git CLI
 
@@ -98,21 +99,21 @@ Job Scouts AI requires a free Google AI Studio API key. No credit card is requir
 git init
 git add index.html logo.png README.md
 git commit -m "Initial commit"
-git remote add origin https://github.com/yourusername/job-scouts-ai.git
+git remote add origin https://github.com/yourusername/jobscoutsai.git
 git branch -M main
 git push -u origin main
 ```
 
-Then enable GitHub Pages in repository Settings.
+Then enable GitHub Pages in repository Settings → Pages.
 
 ---
 
 ## File Structure
 
 ```
-job-scouts-ai/
+jobscoutsai/
 ├── index.html      # Complete app — all UI, JS, CSS in one file
-├── logo.png        # Job Scouts AI logo (place in same folder)
+├── logo.png        # Job Scouts AI logo (must be in same folder as index.html)
 └── README.md       # This file
 ```
 
@@ -135,9 +136,9 @@ All settings are saved to `localStorage` automatically. Nothing is stored on any
 
 ### Export / Import Config
 
-Use **Export Config** (copies JSON to clipboard) to back up or transfer your full configuration including your API key, all targets, and your loaded profile. Use **Import Config** to restore it on another device.
+Use **Export Config** (copies JSON to clipboard) to back up or transfer your full configuration — including your API key, all targets, and your loaded profile. Use **Import Config** on another device to restore it instantly.
 
-> **Security note:** The exported JSON includes your API key. Treat it like a password — don't share it publicly.
+> **Security note:** The exported JSON includes your API key. Treat it like a password — don't share it publicly or commit it to a public repository.
 
 ---
 
@@ -149,12 +150,9 @@ Use **Export Config** (copies JSON to clipboard) to back up or transfer your ful
 | **WARM** (amber) | 50–74 | Good fit — worth a closer look |
 | **COLD** (grey) | 0–49 | Partial match — stretch role |
 
-With a resume loaded, each lead also shows:
-- A numeric 0–100 score
-- A visual score bar
-- A 1–2 sentence breakdown explaining the score
+With a resume loaded, each lead also shows a numeric 0–100 score, a visual bar, and a 1–2 sentence breakdown explaining why it scored that way.
 
-Without a resume, scoring is qualitative (HOT/WARM/COLD) based on keyword matching.
+Without a resume, scoring is qualitative (HOT / WARM / COLD) based on keyword and preference matching.
 
 ---
 
@@ -162,51 +160,61 @@ Without a resume, scoring is qualitative (HOT/WARM/COLD) based on keyword matchi
 
 | Model | Speed | Quality | Notes |
 |---|---|---|---|
-| **Gemini 2.5 Flash** (default) | Fast | Excellent | Best for most users |
-| Gemini 2.0 Flash | Fastest | Very good | Use if 2.5 Flash is unavailable |
-| Gemini 2.5 Pro | Slower | Best | Use for complex profiles |
+| **gemini-2.5-flash** (default) | Fast | Excellent | Best for most users |
+| **gemini-2.0-flash** | Fastest | Very good | Fallback if 2.5 Flash hits limits |
+| **gemini-2.5-pro** | Slower | Best | Use for complex profiles or detailed results |
 
-All models are available on the free tier. Switch models in the **API Configuration** panel.
-
----
-
-## Privacy Policy
-
-- **Your API key** is stored only in your browser's `localStorage`. It is sent only to `generativelanguage.googleapis.com` (Google's Gemini API) with your requests.
-- **Your resume** is processed in-memory and optionally stored in `localStorage` as parsed JSON (not the original file). It is sent to the Gemini API for analysis.
-- **No data** is sent to any third-party servers. This project has no backend, no analytics, and no tracking.
-- **Google's free tier** may use request data to improve Google products. To opt out, upgrade to a paid API tier or use Google's paid Vertex AI endpoint. See [Google AI terms](https://ai.google.dev/gemini-api/terms).
+All three models are available on the free tier. Switch models in the **API Configuration** panel — no restart required.
 
 ---
 
-## Known Limitations
+## Troubleshooting
 
-- **Live job listings:** The AI generates realistic leads based on its training knowledge of companies, roles, and the job market. With Live Web Search enabled, it can pull real-time listings — but CORS restrictions prevent scraping job boards directly.
-- **Apply URLs:** URLs provided by the AI are best-guess links to company career pages. Always verify them before applying.
-- **Rate limits:** On the free tier, heavy use may trigger 429 errors. Wait a minute and try again, or disable live search.
-- **PDF parsing:** Complex PDF layouts (columns, graphics-heavy resumes) may parse less accurately than plain text.
-- **iPad / mobile:** The app works on mobile browsers, but the GitHub web editor workflow is recommended for updates. Use the Upload Files button rather than copy-paste to avoid character corruption.
+**"Model not found" error**
+Make sure you are using one of the three model strings listed above. Old preview model strings (e.g. `gemini-2.5-flash-preview-05-20`) are retired. The app automatically migrates any saved old strings on load.
+
+**"Scout error: Unterminated string in JSON"**
+The AI response was truncated before it finished. The app will attempt to repair and display whatever leads completed successfully. To prevent this: reduce the number of target companies and skill keywords, or switch from Gemini 2.5 Pro to Gemini 2.5 Flash.
+
+**"429 Resource Exhausted"**
+You have hit the free tier rate limit. Wait 60 seconds and try again. If it persists, disable Live Web Search in the API Configuration panel.
+
+**Results are slow to appear**
+Gemini 2.5 Flash typically responds in 10–20 seconds. Gemini 2.5 Pro may take 30–60 seconds for complex profiles. The radar animation confirms the scout is running.
+
+**Logo not showing**
+The `logo.png` file must be in the same folder as `index.html`. The nav bar text "JOB SCOUTS AI" is always visible as a fallback and links back to the top of the page.
+
+---
+
+## Privacy
+
+- **Your API key** is stored only in your browser's `localStorage` and sent only to `generativelanguage.googleapis.com` — Google's Gemini API — with your requests.
+- **Your resume** is processed in-memory. The parsed profile data (not the original file) is optionally stored in `localStorage`. Resume content is sent to the Gemini API for analysis.
+- **No data** is sent to any third-party servers. This project has no backend, no analytics, and no tracking of any kind.
+- **Google's free tier** may use request data to improve Google products. To opt out, upgrade to a paid Gemini API plan. See [Google AI terms](https://ai.google.dev/gemini-api/terms).
 
 ---
 
 ## Development Notes (for contributors)
 
-- All JavaScript uses **ES5** syntax (var, function declarations, string concatenation) for maximum compatibility with the GitHub web editor on iPad/mobile.
-- **No CSS custom properties in string values** — the GitHub web editor can corrupt `--variable` syntax in some contexts. Colors are hardcoded as hex values.
-- `window.onload` is always the last statement in the script block.
+- All JavaScript uses **ES5** syntax — `var`, `function(){}`, string concatenation — for maximum compatibility with the GitHub web editor on iPad and mobile.
+- **No CSS custom properties** (`--variable`) in hardcoded color strings — hex values are used throughout to avoid corruption by the GitHub web editor.
+- `window.onload` is always the last statement in the `<script>` block.
 - **No template literals** — single and double quoted strings only.
-- The Gemini API is called directly from the browser using the user's key. CORS is supported by Google's Gemini API for browser-based requests.
+- The Gemini API supports browser-based CORS requests, so no backend proxy is needed.
+- All configuration is in-browser. Users never need to edit the source file directly.
 
 ---
 
 ## Roadmap Ideas
 
-- [ ] Multiple saved profiles (toggle between them)
+- [ ] Multiple saved profiles (switch between them)
 - [ ] Saved search history / past runs
-- [ ] Email digest via mailto link
-- [ ] Dark/light theme toggle
-- [ ] Custom scoring weights
 - [ ] CSV export
+- [ ] Custom scoring weights per skill
+- [ ] Dark mode toggle
+- [ ] Email digest via mailto link
 
 Pull requests welcome.
 
@@ -217,7 +225,7 @@ Pull requests welcome.
 MIT License — free to use, modify, and distribute.
 
 ```
-Copyright (c) 2026
+Copyright (c) 2026 David Fliesen
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -236,7 +244,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
 
 ## Credits
 
-Built with [Google Gemini API](https://ai.google.dev) · Fonts by [Google Fonts](https://fonts.google.com) · [docx.js](https://docx.js.org) for Word export
+Built with [Google Gemini API](https://ai.google.dev) · Fonts by [Google Fonts](https://fonts.google.com)
 
 ---
 
