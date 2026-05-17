@@ -1239,9 +1239,9 @@ function buildPrompt() {
   if (activeSources.length) prompt += 'SEARCH SOURCES: ' + activeSources.join(', ') + '\n\n';
   if (activePrefs.length) prompt += 'SEARCH PREFERENCES: ' + activePrefs.join(', ') + '\n\n';
 
-  prompt += 'TASK: Find 8-12 relevant job opportunities matching the above profile. For each lead, provide a realistic assessment.\n\n';
+  prompt += 'TASK: Find 6-8 relevant job opportunities matching the above profile. Keep each lead concise — 1-2 sentences max for summary and match_reason fields.\n\n';
   prompt += 'Return ONLY valid JSON with no markdown code fences. Schema:\n';
-  prompt += '{"summary":"2-3 sentence market overview","leads":[{"title":"string","company":"string","location":"string","work_mode":"Remote|Hybrid|On-site","match_score":"HOT|WARM|COLD","numeric_score":0-100,"score_breakdown":"why this score","match_reason":"why this fits","summary":"role description","skill_tags":["array"],"veteran_friendly":bool,"apply_url":"https://... or best guess URL","source":"platform name"}]}\n\n';
+  prompt += '{"summary":"2-3 sentence market overview","leads":[{"title":"string","company":"string","location":"string","work_mode":"Remote|Hybrid|On-site","match_score":"HOT|WARM|COLD","numeric_score":0-100,"score_breakdown":"brief reason","match_reason":"brief reason","summary":"1 sentence","skill_tags":["array max 4"],"veteran_friendly":bool,"apply_url":"https://...","source":"platform name"}]}\n\n';
 
   if (state.profile) {
     prompt += 'SCORING: Use the candidate profile to assign numeric_score 0-100. HOT=75+, WARM=50-74, COLD=0-49. Provide a 1-2 sentence score_breakdown explaining the match.\n';
@@ -1276,7 +1276,7 @@ async function launchScout() {
 
   var requestBody = {
     contents: [{role:'user', parts:[{text: prompt}]}],
-    generationConfig: {temperature:0.7, maxOutputTokens:4096}
+    generationConfig: {temperature:0.7, maxOutputTokens:8192}
   };
 
   if (searchEnabled) {
@@ -1302,7 +1302,36 @@ async function launchScout() {
     document.getElementById('raw-content').textContent = JSON.stringify(data, null, 2);
 
     raw = raw.replace(/```json/g,'').replace(/```/g,'').trim();
-    var result = JSON.parse(raw);
+
+    var result;
+    try {
+      result = JSON.parse(raw);
+    } catch(parseErr) {
+      // Attempt to salvage truncated JSON by closing open structures
+      var repaired = raw;
+      // Close any open string
+      var quoteCount = (repaired.match(/"/g) || []).length;
+      if (quoteCount % 2 !== 0) repaired += '"';
+      // Close open object/array pairs
+      var opens = 0;
+      var arrayOpens = 0;
+      for (var ci = 0; ci < repaired.length; ci++) {
+        if (repaired[ci] === '{') opens++;
+        else if (repaired[ci] === '}') opens--;
+        else if (repaired[ci] === '[') arrayOpens++;
+        else if (repaired[ci] === ']') arrayOpens--;
+      }
+      // Remove trailing comma before closing
+      repaired = repaired.replace(/,\s*$/, '');
+      for (var ai = 0; ai < arrayOpens; ai++) repaired += ']';
+      for (var oi = 0; oi < opens; oi++) repaired += '}';
+      try {
+        result = JSON.parse(repaired);
+        showLaunchStatus('Response was truncated — showing partial results. Try reducing skill keywords or target companies if this persists.', 'info');
+      } catch(e2) {
+        throw new Error('Could not parse AI response. The output may be too large. Try removing some target companies or skills to reduce response size.');
+      }
+    }
 
     lastLeads = result.leads || [];
     lastSummary = result.summary || '';
