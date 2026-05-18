@@ -1,4 +1,13 @@
 <!DOCTYPE html>
+<!--
+  Job Scouts AI
+  MIT License — Copyright (c) 2026 David Fliesen
+  https://github.com/DavidFliesen/jobscoutsai
+
+  Free, open source, runs entirely in the browser.
+  Powered by Google Gemini API (user-supplied key).
+  No backend. No tracking. No data collection.
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -10,8 +19,6 @@
 :root {
   --page-bg: #f0f4f8;
   --panel: #ffffff;
-  --panel2: #eef3fc;
-  --panel2b: #e4ecf8;
   --blue: #1a3fa8;
   --blue-hover: #0f2d7a;
   --accent: #2563eb;
@@ -42,7 +49,6 @@ body {
   font-size: 18px;
   line-height: 1.65;
 }
-body::before { display: none; }
 
 /* NAV */
 nav {
@@ -412,6 +418,38 @@ section { scroll-margin-top: 80px; }
 .val-ok { color: var(--hot); }
 .val-warn { color: #b45309; }
 .val-err { color: #991b1b; }
+
+/* MODAL */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 999;
+  background: rgba(10,22,40,0.55); backdrop-filter: blur(3px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: #ffffff; border: 1px solid var(--border);
+  border-radius: var(--radius2); padding: 32px;
+  max-width: 440px; width: 90%; box-shadow: 0 16px 48px rgba(26,63,168,0.18);
+}
+.modal h3 {
+  font-size: 17px; font-weight: 700; color: var(--text);
+  margin-bottom: 10px;
+}
+.modal p { font-size: 15px; color: var(--text2); line-height: 1.6; margin-bottom: 24px; }
+.modal-btns { display: flex; flex-direction: column; gap: 10px; }
+.modal-btn {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 18px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: #f8fafc;
+  cursor: pointer; font-family: 'Exo 2', sans-serif;
+  font-size: 15px; font-weight: 600; color: var(--text);
+  transition: all 0.15s; text-align: left; width: 100%;
+}
+.modal-btn:hover { border-color: var(--blue); background: #eff6ff; color: var(--blue); }
+.modal-btn.danger:hover { border-color: #ef4444; background: #fef2f2; color: #991b1b; }
+.modal-btn-icon { font-size: 20px; flex-shrink: 0; }
+.modal-btn-label { font-weight: 700; display: block; }
+.modal-btn-desc { font-size: 12px; color: var(--text3); font-weight: 400; display: block; margin-top: 1px; }
 </style>
 </head>
 <body>
@@ -701,7 +739,7 @@ section { scroll-margin-top: 80px; }
     <div class="btn-group">
       <button class="btn btn-secondary btn-sm" onclick="exportTXT()">📄 TXT</button>
       <button class="btn btn-secondary btn-sm" onclick="exportHTML()">🌐 HTML Report</button>
-      <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ Print / PDF</button>
+      <button class="btn btn-primary btn-sm" onclick="exportPDF()">📑 PDF Report</button>
     </div>
   </div>
   <button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="toggleRaw()">🔍 Toggle Raw Response</button>
@@ -775,7 +813,7 @@ section { scroll-margin-top: 80px; }
     <p>Job Scouts AI is a free, open source personal job search tool powered by Google's Gemini AI. It runs entirely in your browser — no servers, no subscriptions, no data collection. Your resume and search configuration stay on your device.</p>
     <p style="margin-top:8px">Released under the MIT License.</p>
     <div class="about-links">
-      <a href="https://github.com" target="_blank" class="about-link">⭐ GitHub</a>
+      <a href="https://github.com/DavidFliesen/jobscoutsai" target="_blank" class="about-link">⭐ GitHub</a>
     </div>
   </div>
   <div class="about-card">
@@ -788,7 +826,37 @@ section { scroll-margin-top: 80px; }
 
 </div><!-- /wrap -->
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
+<!-- RESUME IMPORT MODAL -->
+<div class="modal-overlay" id="resume-modal">
+  <div class="modal">
+    <h3>Profile Already Loaded</h3>
+    <p>A candidate profile is already loaded. How would you like to handle the new resume?</p>
+    <div class="modal-btns">
+      <button class="modal-btn" onclick="resumeModalChoice('append')">
+        <span class="modal-btn-icon">➕</span>
+        <span>
+          <span class="modal-btn-label">Append</span>
+          <span class="modal-btn-desc">Merge new skills, companies &amp; locations into your existing profile</span>
+        </span>
+      </button>
+      <button class="modal-btn" onclick="resumeModalChoice('replace')">
+        <span class="modal-btn-icon">🔄</span>
+        <span>
+          <span class="modal-btn-label">Replace</span>
+          <span class="modal-btn-desc">Overwrite the current profile with the new resume</span>
+        </span>
+      </button>
+      <button class="modal-btn danger" onclick="resumeModalChoice('cancel')">
+        <span class="modal-btn-icon">✕</span>
+        <span>
+          <span class="modal-btn-label">Cancel</span>
+          <span class="modal-btn-desc">Keep the existing profile, discard the new resume</span>
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
 
 // ─── DEFAULT STATE ────────────────────────────────────────────────
@@ -935,24 +1003,35 @@ function exportConfig() {
     state: state
   };
   var json = JSON.stringify(cfg, null, 2);
-  navigator.clipboard.writeText(json).then(function(){
-    showConfigStatus('Config copied to clipboard!', 'ok');
-  }).catch(function(){
-    prompt('Copy this config JSON:', json);
-  });
+  var blob = new Blob([json], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'jobscouts-config-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  showConfigStatus('Config saved to file.', 'ok');
 }
 
 function importConfig() {
-  var json = prompt('Paste your config JSON:');
-  if (!json) return;
-  try {
-    var cfg = JSON.parse(json);
-    if (cfg.apikey) { localStorage.setItem('jobscouts_apikey', cfg.apikey); document.getElementById('api-key').value = cfg.apikey; }
-    if (cfg.model) { localStorage.setItem('jobscouts_model', cfg.model); document.getElementById('model-select').value = cfg.model; }
-    if (cfg.search !== undefined) { localStorage.setItem('jobscouts_search', cfg.search ? 'true' : 'false'); document.getElementById('enable-search').checked = cfg.search; toggleSearchWarning(); }
-    if (cfg.state) { state = cfg.state; saveState(); renderAll(); }
-    showConfigStatus('Config imported successfully!', 'ok');
-  } catch(e) { showConfigStatus('Invalid JSON. Import failed.', 'err'); }
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json,application/json';
+  input.onchange = function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        var cfg = JSON.parse(ev.target.result);
+        if (cfg.apikey) { localStorage.setItem('jobscouts_apikey', cfg.apikey); document.getElementById('api-key').value = cfg.apikey; }
+        if (cfg.model) { localStorage.setItem('jobscouts_model', cfg.model); document.getElementById('model-select').value = cfg.model; }
+        if (cfg.search !== undefined) { localStorage.setItem('jobscouts_search', cfg.search ? 'true' : 'false'); document.getElementById('enable-search').checked = cfg.search; toggleSearchWarning(); }
+        if (cfg.state) { state = cfg.state; saveState(); renderAll(); }
+        showConfigStatus('Config imported from ' + file.name, 'ok');
+      } catch(e) { showConfigStatus('Invalid JSON file. Import failed.', 'err'); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
 }
 
 // ─── PANEL TOGGLE ────────────────────────────────────────────────
@@ -974,6 +1053,15 @@ function renderAll() {
   renderProfileSummary();
 }
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function renderTags(type) {
   var arr = state[type] || [];
   var container = document.getElementById(type + '-tags');
@@ -982,7 +1070,7 @@ function renderTags(type) {
   arr.forEach(function(val, i) {
     var tag = document.createElement('span');
     tag.className = 'tag';
-    tag.innerHTML = val + ' <span class="tag-x" onclick="removeTag(\'' + type + '\',' + i + ')">×</span>';
+    tag.innerHTML = escapeHtml(val) + ' <span class="tag-x" onclick="removeTag(\'' + type + '\',' + i + ')">×</span>';
     container.appendChild(tag);
   });
 }
@@ -996,7 +1084,7 @@ function addTag(type) {
   var dup = arr.findIndex(function(x){ return x.toLowerCase() === val.toLowerCase(); });
   if (dup !== -1) {
     var tags = document.getElementById(type + '-tags').children[dup];
-    if (tags) { tags.style.outline = '2px solid var(--warm)'; setTimeout(function(){ tags.style.outline=''; }, 800); }
+    if (tags) { tags.style.outline = '2px solid #c47000'; setTimeout(function(){ tags.style.outline=''; }, 800); }
     inp.value = ''; return;
   }
   arr.push(val);
@@ -1018,7 +1106,7 @@ function renderSources() {
   state.sources.forEach(function(src, i) {
     var item = document.createElement('label');
     item.className = 'source-item' + (src.active ? ' active' : '');
-    item.innerHTML = '<input type="checkbox"' + (src.active ? ' checked' : '') + ' onchange="toggleSource(' + i + ',this.checked)"><span>' + src.name + '</span>';
+    item.innerHTML = '<input type="checkbox"' + (src.active ? ' checked' : '') + ' onchange="toggleSource(' + i + ',this.checked)"><span>' + escapeHtml(src.name) + '</span>';
     grid.appendChild(item);
   });
 }
@@ -1138,39 +1226,61 @@ async function analyzeResume(b64, fileType, plainText) {
     );
     var data = await res.json();
     if (data.error) throw new Error(data.error.message);
+    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+      throw new Error('Unexpected API response structure. Try again or switch models.');
+    }
     var raw = data.candidates[0].content.parts[0].text;
     raw = raw.replace(/```json/g,'').replace(/```/g,'').trim();
     var profile = JSON.parse(raw);
 
-    var existing = state.profile;
-    if (existing) {
-      var choice = confirm('A profile is already loaded. Click OK to Replace it, or Cancel to Append the new data.');
-      if (choice) {
-        state.profile = profile;
-      } else {
-        if (profile.companies) state.companies = mergeArrays(state.companies, profile.companies);
-        if (profile.skills) state.skills = mergeArrays(state.skills, profile.skills);
-        if (profile.locations) state.locations = mergeArrays(state.locations, profile.locations);
-        state.profile = profile;
-      }
+    if (state.profile) {
+      // Show three-option modal — result handled by resumeModalChoice()
+      pendingProfile = profile;
+      document.getElementById('resume-modal').classList.add('active');
     } else {
-      state.profile = profile;
-      if (profile.companies && profile.companies.length) state.companies = mergeArrays(state.companies, profile.companies);
-      if (profile.skills && profile.skills.length) state.skills = mergeArrays(state.skills, profile.skills);
-      if (profile.locations && profile.locations.length) state.locations = mergeArrays(state.locations, profile.locations);
-      if (profile.prefs) Object.assign(state.prefs, profile.prefs);
+      applyProfile(profile, 'replace');
     }
 
-    saveState();
-    renderAll();
-    ps.textContent = 'Profile loaded: ' + (profile.title || 'Professional') + ' — ' + (profile.experience_years || '?') + ' years exp.';
+    ps.textContent = 'Analysis complete. Choose how to apply the profile above.';
     ps.className = 'status-bar ok';
     document.getElementById('paste-area').style.display = 'none';
-    renderProfileSummary();
   } catch(e) {
     ps.textContent = 'Parse error: ' + e.message;
     ps.className = 'status-bar err';
   }
+}
+
+var pendingProfile = null;
+
+function resumeModalChoice(choice) {
+  document.getElementById('resume-modal').classList.remove('active');
+  if (choice === 'cancel' || !pendingProfile) { pendingProfile = null; return; }
+  applyProfile(pendingProfile, choice);
+  pendingProfile = null;
+}
+
+function applyProfile(profile, mode) {
+  var ps = document.getElementById('profile-status');
+  if (mode === 'replace') {
+    state.profile = profile;
+    if (profile.companies && profile.companies.length) state.companies = mergeArrays([], profile.companies);
+    if (profile.skills && profile.skills.length) state.skills = mergeArrays([], profile.skills);
+    if (profile.locations && profile.locations.length) state.locations = mergeArrays([], profile.locations);
+    if (profile.prefs) Object.assign(state.prefs, profile.prefs);
+  } else {
+    // append
+    state.profile = profile;
+    if (profile.companies) state.companies = mergeArrays(state.companies, profile.companies);
+    if (profile.skills) state.skills = mergeArrays(state.skills, profile.skills);
+    if (profile.locations) state.locations = mergeArrays(state.locations, profile.locations);
+    if (profile.prefs) Object.assign(state.prefs, profile.prefs);
+  }
+  saveState();
+  renderAll();
+  renderProfileSummary();
+  ps.textContent = 'Profile ' + mode + 'ed: ' + (profile.title || 'Professional') + ' — ' + (profile.experience_years || '?') + ' years exp.';
+  ps.className = 'status-bar ok';
+  ps.style.display = 'block';
 }
 
 function mergeArrays(a, b) {
@@ -1469,32 +1579,97 @@ function exportTXT() {
 
 function exportHTML() {
   if (!lastLeads.length) { alert('No results to export. Run the scout first.'); return; }
-  var rows = lastLeads.map(function(lead) {
-    var sc = (lead.match_score || 'COLD').toUpperCase();
-    var colors = {HOT:'#10b981', WARM:'#f59e0b', COLD:'#64748b'};
-    var color = colors[sc] || '#64748b';
-    return '<tr style="border-bottom:1px solid #eee">' +
-      '<td style="padding:10px 8px"><strong>' + lead.title + '</strong><br><span style="color:#555">' + lead.company + '</span></td>' +
-      '<td style="padding:10px 8px">' + (lead.location || '') + '<br>' + (lead.work_mode || '') + '</td>' +
-      '<td style="padding:10px 8px"><span style="background:' + color + ';color:#fff;padding:2px 8px;border-radius:12px;font-size:12px">' + sc + (lead.numeric_score ? ' ' + lead.numeric_score : '') + '</span></td>' +
-      '<td style="padding:10px 8px;font-size:13px">' + (lead.match_reason || '') + '</td>' +
-      '<td style="padding:10px 8px">' + (lead.apply_url ? '<a href="' + lead.apply_url + '">Apply</a>' : '') + '</td>' +
-    '</tr>';
-  }).join('');
-
-  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Job Scouts AI Report</title></head><body style="font-family:sans-serif;max-width:900px;margin:0 auto;padding:20px">' +
-    '<h1 style="color:#1e4db7">Job Scouts AI — Briefing Report</h1>' +
-    '<p>' + new Date().toLocaleString() + '</p>' +
-    '<p style="background:#f0f4ff;padding:12px;border-radius:8px">' + lastSummary + '</p>' +
-    '<table style="width:100%;border-collapse:collapse;margin-top:20px">' +
-    '<thead><tr style="background:#f0f4ff"><th style="padding:10px 8px;text-align:left">Role</th><th>Location</th><th>Score</th><th>Match</th><th>Link</th></tr></thead>' +
-    '<tbody>' + rows + '</tbody></table></body></html>';
-
+  var html = buildReportHTML(false);
   var blob = new Blob([html], {type:'text/html'});
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'jobscouts-report-' + new Date().toISOString().slice(0,10) + '.html';
   a.click();
+}
+
+function exportPDF() {
+  if (!lastLeads.length) { alert('No results to export. Run the scout first.'); return; }
+  var html = buildReportHTML(true);
+  var win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(function(){ win.print(); }, 800);
+}
+
+function buildReportHTML(forPrint) {
+  var date = new Date().toLocaleDateString('en-US', {year:'numeric', month:'long', day:'numeric'});
+  var scoreColors = {HOT:'#0e7a3a', WARM:'#c47000', COLD:'#888888'};
+  var scoreBg = {HOT:'#e6f4ec', WARM:'#fff4e0', COLD:'#f5f5f5'};
+  var scoreBorder = {HOT:'#b3dfc5', WARM:'#f5d08a', COLD:'#d0d0d0'};
+
+  var cards = lastLeads.map(function(lead, i) {
+    var sc = (lead.match_score || 'COLD').toUpperCase();
+    var color = scoreColors[sc] || '#888';
+    var bg = scoreBg[sc] || '#f5f5f5';
+    var border = scoreBorder[sc] || '#ddd';
+    var num = lead.numeric_score || (sc === 'HOT' ? 75 : sc === 'WARM' ? 60 : 35);
+    var barWidth = num + '%';
+    var barColor = color;
+    var skillTagsHtml = (lead.skill_tags || []).map(function(t) {
+      return '<span style="background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;display:inline-block;margin:2px 3px 2px 0">' + escapeHtml(t) + '</span>';
+    }).join('');
+    var applyHtml = lead.apply_url
+      ? '<a href="' + escapeHtml(lead.apply_url) + '" style="color:#1a3fa8;font-weight:700;font-size:13px;text-decoration:none;border:1px solid #1a3fa8;padding:5px 14px;border-radius:6px;display:inline-block">Apply →</a>'
+      : '';
+    var vetHtml = lead.veteran_friendly
+      ? '<span style="background:#fffbeb;border:1px solid #fcd34d;color:#92400e;font-size:11px;padding:3px 8px;border-radius:10px;font-weight:700">★ VET FRIENDLY</span>'
+      : '';
+    var scoreBarHtml = '<div style="height:4px;background:#e2e8f0;border-radius:2px;margin:8px 0 4px"><div style="height:4px;width:' + barWidth + ';background:' + barColor + ';border-radius:2px"></div></div><div style="font-size:11px;color:#6b7280;font-style:italic;margin-bottom:8px">' + escapeHtml(lead.score_breakdown || '') + '</div>';
+
+    return '<div style="border:1px solid #c3d4ee;border-left:4px solid ' + color + ';border-radius:10px;padding:20px;margin-bottom:16px;background:#ffffff;page-break-inside:avoid">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">' +
+        '<div>' +
+          '<div style="font-size:17px;font-weight:700;color:#1a2332">' + escapeHtml(lead.title || '') + '</div>' +
+          '<div style="font-size:14px;color:#1a3fa8;font-weight:600;margin-top:2px">' + escapeHtml(lead.company || '') + '</div>' +
+          '<div style="font-size:12px;color:#6b7280;margin-top:3px">' + escapeHtml(lead.location || '') + ' &nbsp;·&nbsp; ' + escapeHtml(lead.work_mode || '') + ' &nbsp;·&nbsp; ' + escapeHtml(lead.source || '') + '</div>' +
+        '</div>' +
+        '<span style="background:' + bg + ';color:' + color + ';border:1px solid ' + border + ';padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap">' + sc + (lead.numeric_score ? ' &nbsp;' + num + '/100' : '') + '</span>' +
+      '</div>' +
+      (lead.numeric_score ? scoreBarHtml : '') +
+      '<div style="font-size:14px;color:#4a5568;line-height:1.6;margin-bottom:10px">' + escapeHtml((lead.match_reason || '') + ' ' + (lead.summary || '')) + '</div>' +
+      (skillTagsHtml ? '<div style="margin-bottom:12px">' + skillTagsHtml + '</div>' : '') +
+      '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' + vetHtml + applyHtml + '</div>' +
+    '</div>';
+  }).join('');
+
+  var printStyle = forPrint
+    ? '@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none !important; } }'
+    : '';
+
+  return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">' +
+    '<title>Job Scouts AI — Briefing Report — ' + date + '</title>' +
+    '<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">' +
+    '<style>' +
+      'body{font-family:"Exo 2",sans-serif;background:#f0f4f8;color:#1a2332;margin:0;padding:0}' +
+      '.page{max-width:860px;margin:0 auto;padding:40px 32px}' +
+      '.header{background:linear-gradient(135deg,#1a3fa8 0%,#0f2d7a 100%);color:#fff;border-radius:12px;padding:32px 36px;margin-bottom:28px}' +
+      '.header h1{font-size:26px;font-weight:900;letter-spacing:0.06em;margin:0 0 6px}' +
+      '.header .meta{font-family:"Share Tech Mono",monospace;font-size:13px;opacity:0.8;margin-bottom:12px}' +
+      '.header .summary{font-size:15px;line-height:1.65;opacity:0.92;border-top:1px solid rgba(255,255,255,0.2);padding-top:14px;margin-top:4px}' +
+      '.section-title{font-size:12px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#1a3fa8;margin:0 0 16px;display:flex;align-items:center;gap:10px}' +
+      '.section-title::after{content:"";flex:1;height:1px;background:#c3d4ee}' +
+      '.footer{text-align:center;font-size:12px;color:#94a3b8;margin-top:32px;padding-top:16px;border-top:1px solid #c3d4ee;font-family:"Share Tech Mono",monospace}' +
+      '.footer a{color:#1a3fa8;text-decoration:none}' +
+      printStyle +
+    '</style></head><body>' +
+    '<div class="page">' +
+      '<div class="header">' +
+        '<div class="meta">JOB SCOUTS AI &nbsp;·&nbsp; BRIEFING REPORT &nbsp;·&nbsp; ' + date + '</div>' +
+        '<h1>Opportunity Leads</h1>' +
+        '<div class="summary">' + escapeHtml(lastSummary) + '</div>' +
+      '</div>' +
+      '<div class="section-title">Scored Opportunities (' + lastLeads.length + ' leads)</div>' +
+      cards +
+      '<div class="footer">Generated by <a href="https://github.com/DavidFliesen/jobscoutsai">Job Scouts AI</a> &nbsp;·&nbsp; Open Source &nbsp;·&nbsp; MIT License</div>' +
+    '</div>' +
+    (forPrint ? '<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},500)});<\/script>' : '') +
+    '</body></html>';
 }
 
 // ─── BOOT ─────────────────────────────────────────────────────────

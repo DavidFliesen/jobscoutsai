@@ -19,12 +19,12 @@ No servers. No subscriptions. No data collection. Everything runs in your browse
 
 ## Features
 
-- **Resume Upload & AI Parsing** — Upload PDF, TXT, DOC, or paste text. Gemini extracts your skills, experience, and preferences automatically.
+- **Resume Upload & AI Parsing** — Upload PDF, TXT, DOC, or paste text. Gemini extracts your skills, experience, and preferences automatically. When a profile is already loaded, a modal dialog offers three options: Append (merge), Replace (overwrite), or Cancel.
 - **Numeric Scoring (0–100)** — When a profile is loaded, each lead gets a numeric match score with a visual bar and breakdown text. Without a profile, qualitative HOT / WARM / COLD scoring is used.
 - **Configurable Targets** — Set target companies, skill keywords, preferred locations, job sources, and search preferences — all within the browser, no file editing required.
 - **Optional Live Web Search** — Toggle Google Search Grounding to pull real-time job listings (uses free-tier quota — see note below). Off by default.
-- **Export** — Download results as TXT, HTML report, or print to PDF via your browser.
-- **Import / Export Config** — Sync your full configuration across devices via clipboard JSON.
+- **Export Results** — Download as TXT (plain text), HTML Report (standalone file), or PDF Report (opens in a new tab with professional layout, score bars, skill tags, and clickable Apply links — print or save as PDF from your browser).
+- **Export / Import Config** — Export saves a `.json` file to your downloads folder. Import loads from that file. Includes your API key, all targets, and loaded profile.
 - **Privacy First** — Your API key and resume never leave your device. The only external call is directly from your browser to Google's Gemini API using your own key.
 
 ---
@@ -87,7 +87,7 @@ Job Scouts AI requires a free Google AI Studio API key. No credit card is requir
 
 1. Create a new public repository (e.g. `jobscoutsai`)
 2. On the empty repo page, click **"uploading an existing file"**
-3. Drag and drop `index.html`, `logo.png`, and `README.md` onto the upload area
+3. Drag and drop `index.html`, `logo.png`, `LICENSE`, and `README.md` onto the upload area
 4. Click **Commit changes**
 5. Go to **Settings → Pages**
 6. Under **Source**, select **Deploy from a branch**, set branch to `main` and folder to `/ (root)`
@@ -97,7 +97,7 @@ Job Scouts AI requires a free Google AI Studio API key. No credit card is requir
 
 ```bash
 git init
-git add index.html logo.png README.md
+git add index.html logo.png LICENSE README.md
 git commit -m "Initial commit"
 git remote add origin https://github.com/yourusername/jobscoutsai.git
 git branch -M main
@@ -114,6 +114,7 @@ Then enable GitHub Pages in repository Settings → Pages.
 jobscoutsai/
 ├── index.html      # Complete app — all UI, JS, CSS in one file
 ├── logo.png        # Job Scouts AI logo (must be in same folder as index.html)
+├── LICENSE         # MIT License
 └── README.md       # This file
 ```
 
@@ -136,9 +137,9 @@ All settings are saved to `localStorage` automatically. Nothing is stored on any
 
 ### Export / Import Config
 
-Use **Export Config** (copies JSON to clipboard) to back up or transfer your full configuration — including your API key, all targets, and your loaded profile. Use **Import Config** on another device to restore it instantly.
+Use **Export Config** to download a `jobscouts-config-YYYY-MM-DD.json` file to your downloads folder. Use **Import Config** to load from that file on any device — no clipboard needed.
 
-> **Security note:** The exported JSON includes your API key. Treat it like a password — don't share it publicly or commit it to a public repository.
+> **Security note:** The exported JSON file includes your API key. Treat it like a password — don't share it publicly, post it online, or commit it to a repository.
 
 ---
 
@@ -225,7 +226,10 @@ Pull requests welcome.
 MIT License — free to use, modify, and distribute.
 
 ```
+MIT License
+
 Copyright (c) 2026 David Fliesen
+https://github.com/DavidFliesen/jobscoutsai
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -237,7 +241,13 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```
 
 ---
