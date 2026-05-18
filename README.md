@@ -252,6 +252,21 @@ SOFTWARE.
 
 ---
 
+## Developer
+
+**David Fliesen** — Hybrid Generative AI & Multimedia Developer, Summerville, SC
+
+David has 20+ years in multimedia production, U.S. Navy Combat Camera service, and DoD simulation and virtual agent work. He now builds AI-powered tools at the intersection of generative AI, multimedia, and defense/enterprise applications — including agentic pipelines, conversational avatars, and open source utilities like Job Scouts AI.
+
+| | |
+|---|---|
+| 🌐 Portfolio | [davidfliesen.github.io](https://davidfliesen.github.io) |
+| 💼 LinkedIn | [linkedin.com/in/fliesen](https://linkedin.com/in/fliesen/) |
+| 🐙 GitHub | [github.com/DavidFliesen](https://github.com/DavidFliesen) |
+| 🐾 Sisters of Summerville | [sisters-of-summerville.github.io](https://sisters-of-summerville.github.io) |
+
+---
+
 ## Credits
 
 Built with [Google Gemini API](https://ai.google.dev) · Fonts by [Google Fonts](https://fonts.google.com)
